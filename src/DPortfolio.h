@@ -3,10 +3,11 @@
 #ifndef _DPORTFOLIO_H_
 #define _DPORTFOLIO_H_
 
-#include "types/Order.h"
-#include "types/Position.h"
-
 #include <unordered_map>
+#include <memory>
+#include "types/Order.h"
+#include "types/Signal.h"
+#include "types/Position.h"
 
 struct PortfolioSummary {
   int num_positions{0};
@@ -28,9 +29,11 @@ public:
   DPortfolio(int net_liquidity, int commission);
   ~DPortfolio() = default;
 
-  const Position &get_position(const std::string &symbol);
-  bool close_position(const std::string &symbol, double price);
+  const Position &get_position(int32_t instrument_id);
+  bool close_position(int32_t &instrument_id, double price);
   PortfolioSummary summary();
+
+  void onSignal(std::shared_ptr<Signal> signal);
 
 public:
   void process_sell_order(Order &o);
@@ -42,8 +45,7 @@ private:
   float m_fCommission;
   float m_fRealizedPnl{0};
 
-  // std::vector<Order> m_vFilledOrders{};
-  std::unordered_map<std::string, Position> m_Positions;
+  std::unordered_map<int32_t, Position> m_Positions;
 
 private:
   PortfolioSummary m_Summary;

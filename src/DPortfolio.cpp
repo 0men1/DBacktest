@@ -5,8 +5,8 @@ DPortfolio::DPortfolio(int net_liquidity, int commission = 1)
   m_Summary.starting_liquidty = net_liquidity;
 }
 
-const Position &DPortfolio::get_position(const std::string &symbol) {
-  return m_Positions[symbol];
+const Position &DPortfolio::get_position(int32_t instrument_id) {
+  return m_Positions[instrument_id];
 }
 
 PortfolioSummary DPortfolio::summary() {
@@ -16,28 +16,12 @@ PortfolioSummary DPortfolio::summary() {
   return m_Summary;
 }
 
-bool DPortfolio::close_position(const std::string &symbol, double price) {
-  Position &p = m_Positions[symbol];
-  if (p.quantity <= 0) {
-    return false;
-  }
-  Order o = Order{-1, 1, Order::Type::MARKET, p.quantity, price, symbol};
-
-  if (p.quantity > 0) {
-    process_sell_order(o);
-  } else {
-    process_buy_order(o);
-  }
-
-  return true;
-}
-
 void DPortfolio::process_sell_order(Order &o) {
-  if (o.quantity() <= 0 || o.price() <= 0 || o.symbol().empty()) {
+  if (o.quantity() <= 0 || o.price() <= 0 || o.instrument_id()) {
     throw std::invalid_argument("error: invalid order data");
   }
 
-  Position &p = m_Positions[o.symbol()];
+  Position &p = m_Positions[o.instrument_id()];
 
   if (p.quantity > 0 && p.quantity >= o.quantity()) {
     p.quantity -= o.quantity();
@@ -62,11 +46,11 @@ void DPortfolio::process_sell_order(Order &o) {
 }
 
 void DPortfolio::process_buy_order(Order &o) {
-  if (o.quantity() <= 0 || o.price() <= 0 || o.symbol().empty()) {
+  if (o.quantity() <= 0 || o.price() <= 0 || o.instrument_id()) {
     throw std::invalid_argument("error: invalid order data");
   }
 
-  Position &p = m_Positions[o.symbol()];
+  Position &p = m_Positions[o.instrument_id()];
 
   float cost = o.price() * o.quantity(); // Cost of the order
   float cost_comission =
@@ -99,13 +83,4 @@ void DPortfolio::process_buy_order(Order &o) {
   m_fNetLiquidity -= cost_comission; // Subtract cost + commission&fees amount
   m_Summary.num_trades++;
   m_Summary.num_buys++;
-}
-
-// TODO
-void DPortfolio::process_stop_order(Order &o) {
-  if (o.quantity() <= 0 || o.price() <= 0 || o.symbol().empty()) {
-    throw std::invalid_argument("error: invalid order data");
-  }
-
-  Position &p = m_Positions[o.symbol()];
 }

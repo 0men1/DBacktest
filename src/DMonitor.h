@@ -4,7 +4,6 @@
 #define _DMONITOR_H_
 
 #include <chrono>
-#include <iostream>
 #include <unordered_map>
 
 struct Timer {

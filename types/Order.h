@@ -1,14 +1,12 @@
 #pragma once
 
+#include "Event.h"
 #ifndef _ORDER_H_
 #define _ORDER_H_
 
-#include <cstdint>
-#include <string>
-
 typedef long OrderId;
 
-class Order {
+class Order : public Event {
 public:
   enum class Type {
     MARKET,
@@ -16,27 +14,23 @@ public:
     STOP,
   };
 
-  Order() = default;
-
-  Order(OrderId orderId, uint64_t timestamp, Type type, double quantity,
-        double price, std::string symbol)
-      : orderId_(orderId), timestamp_(timestamp), type_(type),
-        quantity_(quantity), price_(price), symbol_(symbol) {}
+  Order(OrderId orderId, Type type, double quantity,
+        double price, int32_t instrument_id)
+      : Event(ORDER), orderId_(orderId), type_(type),
+        quantity_(quantity), price_(price), m_instrument_id(instrument_id) {}
 
   OrderId orderId() { return orderId_; }
-  uint64_t timestamp() { return timestamp_; }
   Type type() { return type_; }
   double &quantity() { return quantity_; }
   double price() { return price_; }
-  std::string symbol() { return symbol_; }
+  int32_t instrument_id() { return m_instrument_id; }
 
 private:
   OrderId orderId_;
-  uint64_t timestamp_;
   Type type_;
   double quantity_;
   double price_;
-  std::string symbol_;
+  int32_t m_instrument_id;
 };
 
 #endif

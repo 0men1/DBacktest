@@ -1,21 +1,16 @@
 #include "DReader.h"
+#include <memory>
 
-/**
- * @brief Construct a new DReader::DReader object
- *
- * @param filepath
- * @param m_vBuffersize
- */
 DReader::DReader(std::string filepath, uint32_t m_vBuffersize)
     : m_sFilepath(filepath), m_uiBufferSize(m_vBuffersize) {
   m_Summary.filePath = filepath;
   m_Summary.bufferSize = m_uiBufferSize;
   m_Summary.numCandlesProcessed = 0;
 
-  static_assert(sizeof(Candle) == 32);
+  static_assert(sizeof(CandleData) == 32);
 
-  m_consumerBuffer = std::make_unique<Candle[]>(m_uiBufferSize);
-  m_producerBuffer = std::make_unique<Candle[]>(m_uiBufferSize);
+  m_consumerBuffer = std::make_unique<CandleData[]>(m_uiBufferSize);
+  m_producerBuffer = std::make_unique<CandleData[]>(m_uiBufferSize);
 
   m_Filestream.open(m_sFilepath, std::ios::binary | std::ios::in);
   if (!m_Filestream || !m_Filestream.is_open())
@@ -39,9 +34,9 @@ void DReader::producerTask() {
     // read into the producer buffer. we own this buffer exclusively right now,
     // so no lock is needed
     m_Filestream.read(reinterpret_cast<char *>(m_producerBuffer.get()),
-                      m_uiBufferSize * sizeof(Candle));
+                      m_uiBufferSize * sizeof(CandleData));
     std::streamsize bytes_read = m_Filestream.gcount();
-    size_t read_count = bytes_read / sizeof(Candle);
+    size_t read_count = bytes_read / sizeof(CandleData);
 
     bool local_eof = (bytes_read == 0);
 
@@ -71,12 +66,6 @@ void DReader::producerTask() {
   }
 }
 
-/**
- * @brief
- *
- * @return true
- * @return false
- */
 bool DReader::has_next() {
   if (m_uiConsumerPos < m_uiConsumerCount)
     return true;
@@ -97,15 +86,12 @@ bool DReader::has_next() {
   return m_uiConsumerPos < m_uiConsumerCount;
 }
 
-/**
- * @brief
- *
- * @return const Candle&
- */
-const Candle &DReader::next() {
+std::shared_ptr<Candle> DReader::next() {
   if (!has_next())
     throw std::out_of_range("no more candles in file");
 
   m_Summary.numCandlesProcessed++;
-  return m_consumerBuffer[m_uiConsumerPos++];
+  CandleData &data = m_consumerBuffer[m_uiConsumerPos++];
+
+  return std::make_shared<Candle>(data);
 }

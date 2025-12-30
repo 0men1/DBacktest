@@ -3,10 +3,11 @@
 #ifndef _DREADER_H_
 #define _DREADER_H_
 
+#include "src/DContext.h"
 #include "types/Candle.h"
 #include <fstream>
+#include <memory>
 #include <thread>
-#include <vector>
 
 struct ReaderSummary {
   int numCandlesProcessed;
@@ -20,18 +21,12 @@ public:
   ~DReader();
 
 public:
-  const Candle &next();
-  bool has_next();
-
-public:
   ReaderSummary summary() { return m_Summary; }
-  std::string &filepath() { return m_sFilepath; }
-  size_t bufferSize() { return m_uiBufferSize; }
+  std::shared_ptr<Candle> next();
+  bool has_next();
 
 private:
   ReaderSummary m_Summary;
-
-private:
   std::string m_sFilepath;
   std::ifstream m_Filestream;
 
@@ -40,10 +35,9 @@ private:
   size_t m_uiConsumerPos{0}; // Candle reading position in consumer buffer
   size_t m_uiBufferSize;     // Max candles to read from file
   size_t m_uiConsumerCount;  // How many candles to be read by consumer
-  std::vector<Candle> m_vBuffer;
 
-  std::unique_ptr<Candle[]> m_producerBuffer;
-  std::unique_ptr<Candle[]> m_consumerBuffer;
+  std::unique_ptr<CandleData[]> m_producerBuffer;
+  std::unique_ptr<CandleData[]> m_consumerBuffer;
 
   std::thread m_producerThread;
 

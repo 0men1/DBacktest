@@ -12,8 +12,9 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(googletest)
 
 add_subdirectory(src)
-add_subdirectory(strategies)
+# add_subdirectory(strategies)
 add_subdirectory(tests)
 
 add_executable(DBacktest main.cpp)
-target_link_libraries(DBacktest PRIVATE src strategies)
+# target_link_libraries(DBacktest PRIVATE src strategies)
+target_link_libraries(DBacktest PRIVATE src)

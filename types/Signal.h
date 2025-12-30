@@ -1,30 +1,26 @@
 #pragma once
-
 #ifndef _SIGNAL_H
 #define _SIGNAL_H
 
-#include <string>
+#include "Event.h"
 
-class Signal {
+class Signal : public Event {
 public:
   enum class Type { SHORT, LONG };
-  Signal(Type type, uint64_t timestamp, double quantity, double price,
-         std::string symbol)
-      : type_(type), timestamp_(timestamp), symbol_(symbol),
-        quantity_(quantity), price_(price) {}
+  Signal(Type type, double quantity, double price, int32_t instrument_id)
+      : Event(SIGNAL), m_quantity(quantity), m_price(price), m_type(type),
+        m_instrument_id(instrument_id) {}
 
-  uint64_t timestamp() { return timestamp_; }
-  Type type() { return type_; }
-  double &quantity() { return quantity_; }
-  double price() { return price_; }
-  std::string symbol() { return symbol_; }
+  Type type() { return m_type; }
+  double quantity() { return m_quantity; }
+  double price() { return m_price; }
+  int32_t instrument_id() { return m_instrument_id; }
 
 private:
-  Type type_;
-  uint64_t timestamp_;
-  std::string symbol_;
-  double quantity_;
-  double price_;
+  double m_quantity;
+  double m_price;
+  Type m_type;
+  int32_t m_instrument_id;
 };
 
 #endif //_SIGNAL_H
