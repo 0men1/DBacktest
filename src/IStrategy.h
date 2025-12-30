@@ -1,20 +1,26 @@
 #pragma once
 
-#include <memory>
 #ifndef _ISTRATEGY_H_
 #define _ISTRATEGY_H_
 
-struct BacktestContext;
+#include <memory>
+
+struct DContext;
 class Candle;
 
-class IStrategy {
-public:
-  virtual ~IStrategy() = default;
-  virtual void onCandle(std::shared_ptr<Candle> candle) = 0;
-  virtual void init(BacktestContext *context) { m_context = context; };
+class IStrategy
+{
+  public:
+    virtual ~IStrategy() = default;
+    virtual void onCandle(std::shared_ptr<Candle> candle) = 0;
 
-private:
-  BacktestContext *m_context = nullptr;
+    virtual void init(DContext *context)
+    {
+        m_context = context;
+    };
+
+  private:
+    DContext *m_context = nullptr;
 };
 
 #endif // _ISTRATEGY_H
