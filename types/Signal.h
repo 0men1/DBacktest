@@ -12,8 +12,9 @@ class Signal : public Event
         SHORT,
         LONG
     };
-    Signal(Type type, double quantity, double price, int32_t instrument_id)
-        : Event(SIGNAL), m_quantity(quantity), m_price(price), m_type(type), m_instrument_id(instrument_id)
+    Signal(Type type, int32_t instrument_id, float quantity, double price,
+           uint64_t timestamp)
+        : Event(SIGNAL, timestamp), m_quantity(quantity), m_price(price), m_type(type), m_instrument_id(instrument_id)
     {
     }
 
@@ -21,11 +22,11 @@ class Signal : public Event
     {
         return m_type;
     }
-    double quantity()
+    float quantity()
     {
         return m_quantity;
     }
-    double price()
+    float price()
     {
         return m_price;
     }
@@ -35,8 +36,8 @@ class Signal : public Event
     }
 
   private:
-    double m_quantity;
-    double m_price;
+    float m_quantity;
+    float m_price;
     Type m_type;
     int32_t m_instrument_id;
 };

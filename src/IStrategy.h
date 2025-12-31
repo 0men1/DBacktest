@@ -5,7 +5,7 @@
 
 #include <memory>
 
-struct DContext;
+struct DEventBus;
 class Candle;
 
 class IStrategy
@@ -14,13 +14,13 @@ class IStrategy
     virtual ~IStrategy() = default;
     virtual void onCandle(std::shared_ptr<Candle> candle) = 0;
 
-    virtual void init(DContext *context)
+    virtual void init(std::shared_ptr<DEventBus> eventBus)
     {
-        m_context = context;
+        m_pEventBus = eventBus;
     };
 
-  private:
-    DContext *m_context = nullptr;
+  protected:
+    std::shared_ptr<DEventBus> m_pEventBus = nullptr;
 };
 
 #endif // _ISTRATEGY_H

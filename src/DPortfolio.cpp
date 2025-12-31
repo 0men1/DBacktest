@@ -1,24 +1,47 @@
 #include "DPortfolio.h"
 
-DPortfolio::DPortfolio(int net_liquidity, int commission = 1)
-    : m_fNetLiquidity(net_liquidity), m_fCommission(commission)
+void DPortfolio::onSignal(std::shared_ptr<Signal> signal)
 {
-    m_Summary.starting_liquidty = net_liquidity;
+    switch (signal->type())
+    {
+    case Signal::Type::LONG: {
+        if (hasSufficientFunds(signal->price(), signal->quantity()))
+        {
+            int32_t orderQuantity = std::abs(signal->quantity());
+            std::shared_ptr<Order> order = std::make_shared<Order>(createOrder(
+                Signal::Type::SHORT, signal->instrument_id(), signal->price(), orderQuantity, signal->timestamp()));
+
+            m_pEventBus->m_events.push(order);
+        }
+        break;
+    }
+    case Signal::Type::SHORT: {
+        int32_t orderQuantity = -1 * std::abs(signal->quantity());
+        std::shared_ptr<Order> order = std::make_shared<Order>(createOrder(
+            Signal::Type::SHORT, signal->instrument_id(), signal->price(), orderQuantity, signal->timestamp()));
+
+        m_pEventBus->m_events.push(order);
+        break;
+    }
+    }
 }
 
-const Position &DPortfolio::get_position(int32_t instrument_id)
+Position &DPortfolio::getPosition(int instrument_id)
 {
-    return m_Positions[instrument_id];
+    return m_positions[instrument_id];
 }
 
-PortfolioSummary DPortfolio::summary()
+bool DPortfolio::hasSufficientFunds(float price, float quantity)
 {
-    m_Summary.realized_pnl = m_fRealizedPnl;
-    m_Summary.commission = m_fCommission;
-    m_Summary.ending_liquidity = m_fNetLiquidity;
-    return m_Summary;
+    return m_fNetLiquidity < quantity * price;
 }
 
+Order DPortfolio::createOrder(Signal::Type type, int32_t instrument_id, float price, float quantity, uint64_t timestamp)
+{
+    return Order(m_orderId, Order::Type::MARKET, instrument_id, quantity, price, timestamp);
+}
+
+/*
 void DPortfolio::process_sell_order(Order &o)
 {
     if (o.quantity() <= 0 || o.price() <= 0 || o.instrument_id())
@@ -95,3 +118,4 @@ void DPortfolio::process_buy_order(Order &o)
     m_Summary.num_trades++;
     m_Summary.num_buys++;
 }
+ * */

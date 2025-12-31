@@ -16,8 +16,8 @@ class Order : public Event
         STOP,
     };
 
-    Order(OrderId orderId, Type type, double quantity, double price, int32_t instrument_id)
-        : Event(ORDER), orderId_(orderId), type_(type), quantity_(quantity), price_(price),
+    Order(OrderId orderId, Type type, int32_t instrument_id, float price, float quantity, uint64_t timestamp)
+        : Event(ORDER, timestamp), orderId_(orderId), type_(type), quantity_(quantity), price_(price),
           m_instrument_id(instrument_id)
     {
     }
@@ -30,11 +30,11 @@ class Order : public Event
     {
         return type_;
     }
-    double &quantity()
+    float &quantity()
     {
         return quantity_;
     }
-    double price()
+    float price()
     {
         return price_;
     }
@@ -46,8 +46,8 @@ class Order : public Event
   private:
     OrderId orderId_;
     Type type_;
-    double quantity_;
-    double price_;
+    float quantity_;
+    float price_;
     int32_t m_instrument_id;
 };
 

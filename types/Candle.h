@@ -18,7 +18,7 @@ struct CandleData
 class Candle : public Event
 {
   public:
-    Candle(CandleData data) : Event(CANDLE), m_data(data)
+    Candle(CandleData data) : Event(CANDLE, data.timestamp), m_data(data)
     {
     }
 
