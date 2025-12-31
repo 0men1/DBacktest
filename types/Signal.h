@@ -3,43 +3,22 @@
 #define _SIGNAL_H
 
 #include "Event.h"
+#include "Order.h"
 
-class Signal : public Event
+struct Signal : public Event
 {
-  public:
-    enum class Type
-    {
-        SHORT,
-        LONG
-    };
-    Signal(Type type, int32_t instrument_id, float quantity, double price,
-           uint64_t timestamp)
-        : Event(SIGNAL, timestamp), m_quantity(quantity), m_price(price), m_type(type), m_instrument_id(instrument_id)
+    Signal(Type type, Side side, int32_t instrument_id, float price, float quantity, uint64_t timestamp)
+        : Event(SIGNAL, timestamp), type_(type), side_(side), instrument_id_(instrument_id), price_(price),
+          quantity_(quantity), timestamp_(timestamp)
     {
     }
 
-    Type type()
-    {
-        return m_type;
-    }
-    float quantity()
-    {
-        return m_quantity;
-    }
-    float price()
-    {
-        return m_price;
-    }
-    int32_t instrument_id()
-    {
-        return m_instrument_id;
-    }
-
-  private:
-    float m_quantity;
-    float m_price;
-    Type m_type;
-    int32_t m_instrument_id;
+    Type type_;
+    Side side_;
+    int32_t instrument_id_;
+    float price_;
+    float quantity_;
+    uint64_t timestamp_;
 };
 
 #endif //_SIGNAL_H

@@ -45,7 +45,7 @@ class DPortfolio
     void process_sell_order(int32_t instrument_id, float price, float quantity);
     void process_buy_order(int32_t instrument_id, float price, float quantity);
 
-    Order createOrder(Signal::Type type, int32_t instrument_id, float price, float quantity, uint64_t timestamp);
+    Order createOrder(Type type, Side side, int32_t instrument_id, float price, float quantity, uint64_t timestamp);
 
     float m_fNetLiquidity{10000};
     float m_fRealizedPnl{0};

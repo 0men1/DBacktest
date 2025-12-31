@@ -29,7 +29,7 @@ TEST_F(PortfolioFillTest, HandlesNewBuyFillCorrectly)
     float price = 100.0f;
     float qty = 10.0f;
 
-    auto fill = std::make_shared<Fill>(order_id, instrument_id, Order::Type::MARKET, price, qty, 0, 0);
+    auto fill = std::make_shared<Fill>(order_id, Type::MARKET, Side::BUY, instrument_id, price, qty, 0, 0);
     portfolio->onFill(fill);
 
     Position &pos = portfolio->getPosition(instrument_id);
@@ -42,8 +42,8 @@ TEST_F(PortfolioFillTest, CalculatesWeightedAveragePrice)
     int32_t instrument_id = 2;
     OrderId order_id = 2;
 
-    portfolio->onFill(std::make_shared<Fill>(order_id, instrument_id, Order::Type::MARKET, 100.0f, 10.0f, 0, 0));
-    portfolio->onFill(std::make_shared<Fill>(order_id, instrument_id, Order::Type::MARKET, 200.0f, 10.0f, 0, 0));
+    portfolio->onFill(std::make_shared<Fill>(order_id, Type::MARKET, Side::BUY, instrument_id, 100.0f, 10.0f, 0, 0));
+    portfolio->onFill(std::make_shared<Fill>(order_id, Type::MARKET, Side::BUY, instrument_id, 200.0f, 10.0f, 0, 0));
 
     Position &pos = portfolio->getPosition(instrument_id);
     EXPECT_EQ(pos.quantity, 20.0f);
@@ -55,8 +55,8 @@ TEST_F(PortfolioFillTest, HandlesPartialSellAndPnL)
     int32_t instrument_id = 3;
     OrderId order_id = 3;
 
-    portfolio->onFill(std::make_shared<Fill>(order_id, instrument_id, Order::Type::MARKET, 100.0f, 10.0f, 0, 0));
-    portfolio->onFill(std::make_shared<Fill>(order_id, instrument_id, Order::Type::MARKET, 120.0f, -5.0f, 0, 0));
+    portfolio->onFill(std::make_shared<Fill>(order_id, Type::MARKET, Side::BUY, instrument_id, 100.0f, 10.0f, 0, 0));
+    portfolio->onFill(std::make_shared<Fill>(order_id, Type::MARKET, Side::SELL, instrument_id, 120.0f, -5.0f, 0, 0));
 
     Position &pos = portfolio->getPosition(instrument_id);
     EXPECT_EQ(pos.quantity, 5.0f);
@@ -69,8 +69,8 @@ TEST_F(PortfolioFillTest, ClosesPositionCompletely)
     int32_t instrument_id = 4;
     OrderId order_id = 4;
 
-    portfolio->onFill(std::make_shared<Fill>(order_id, instrument_id, Order::Type::MARKET, 50.0f, 5.0f, 0, 0));
-    portfolio->onFill(std::make_shared<Fill>(order_id, instrument_id, Order::Type::MARKET, 50.0f, -5.0f, 0, 0));
+    portfolio->onFill(std::make_shared<Fill>(order_id, Type::MARKET, Side::BUY, instrument_id, 50.0f, 5.0f, 0, 0));
+    portfolio->onFill(std::make_shared<Fill>(order_id, Type::MARKET, Side::SELL, instrument_id, 50.0f, -5.0f, 0, 0));
 
     Position &pos = portfolio->getPosition(instrument_id);
     EXPECT_EQ(pos.quantity, 0.0f);
@@ -82,6 +82,6 @@ TEST_F(PortfolioFillTest, ThrowsOnInvalidSell)
     int32_t instrument_id = 5;
     OrderId order_id = 5;
 
-    auto bad_fill = std::make_shared<Fill>(order_id, instrument_id, Order::Type::MARKET, 100.0f, -5.0f, 0, 0);
+    auto bad_fill = std::make_shared<Fill>(order_id, Type::MARKET, Side::SELL, instrument_id, 100.0f, -5.0f, 0, 0);
     EXPECT_THROW(portfolio->onFill(bad_fill), std::invalid_argument);
 }

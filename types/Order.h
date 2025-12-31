@@ -6,49 +6,33 @@
 
 typedef long OrderId;
 
-class Order : public Event
+enum class Type
 {
-  public:
-    enum class Type
-    {
-        MARKET,
-        LIMIT,
-        STOP,
-    };
+    MARKET,
+    LIMIT,
+    STOP
+};
+enum class Side
+{
+    BUY,
+    SELL
+};
 
-    Order(OrderId orderId, Type type, int32_t instrument_id, float price, float quantity, uint64_t timestamp)
-        : Event(ORDER, timestamp), orderId_(orderId), type_(type), quantity_(quantity), price_(price),
-          m_instrument_id(instrument_id)
+struct Order : public Event
+{
+    Order(OrderId orderId, Type type, Side side, int32_t instrument_id, float price, float quantity, uint64_t timestamp)
+        : Event(ORDER, timestamp), orderId_(orderId), type_(type), side_(side), instrument_id_(instrument_id),
+          price_(price), quantity_(quantity), timestamp_(timestamp)
     {
-    }
-
-    OrderId orderId()
-    {
-        return orderId_;
-    }
-    Type type()
-    {
-        return type_;
-    }
-    float &quantity()
-    {
-        return quantity_;
-    }
-    float price()
-    {
-        return price_;
-    }
-    int32_t instrument_id()
-    {
-        return m_instrument_id;
     }
 
-  private:
     OrderId orderId_;
     Type type_;
-    float quantity_;
+    Side side_;
+    int32_t instrument_id_;
     float price_;
-    int32_t m_instrument_id;
+    float quantity_;
+    uint64_t timestamp_;
 };
 
 #endif

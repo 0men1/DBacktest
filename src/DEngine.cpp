@@ -63,6 +63,10 @@ void DEngine::run()
             std::cout << "SIGNAL" << std::endl;
             break;
         }
+        case FILL: {
+            std::cout << "FILL" << std::endl;
+            break;
+        }
         }
     }
 }

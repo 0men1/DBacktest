@@ -8,6 +8,7 @@ enum EventType
     CANDLE,
     ORDER,
     SIGNAL,
+    FILL
 };
 
 class Event

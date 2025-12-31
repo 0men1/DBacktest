@@ -3,23 +3,23 @@
 
 void DPortfolio::onSignal(std::shared_ptr<Signal> signal)
 {
-    switch (signal->type())
+    switch (signal->side_)
     {
-    case Signal::Type::LONG: {
-        if (hasSufficientFunds(signal->price(), signal->quantity()))
+    case Side::BUY: {
+        if (hasSufficientFunds(signal->price_, signal->quantity_))
         {
-            int32_t orderQuantity = std::abs(signal->quantity());
+            int32_t orderQuantity = std::abs(signal->quantity_);
             std::shared_ptr<Order> order = std::make_shared<Order>(createOrder(
-                Signal::Type::LONG, signal->instrument_id(), signal->price(), orderQuantity, signal->timestamp()));
+                Type::MARKET, Side::BUY, signal->instrument_id_, signal->price_, orderQuantity, signal->timestamp_));
 
             m_pEventBus->m_events.push(order);
         }
         break;
     }
-    case Signal::Type::SHORT: {
-        int32_t orderQuantity = -1 * std::abs(signal->quantity());
+    case Side::SELL: {
+        int32_t orderQuantity = -1 * std::abs(signal->quantity_);
         std::shared_ptr<Order> order = std::make_shared<Order>(createOrder(
-            Signal::Type::SHORT, signal->instrument_id(), signal->price(), orderQuantity, signal->timestamp()));
+            Type::MARKET, Side::SELL, signal->instrument_id_, signal->price_, orderQuantity, signal->timestamp_));
 
         m_pEventBus->m_events.push(order);
         break;
@@ -29,15 +29,15 @@ void DPortfolio::onSignal(std::shared_ptr<Signal> signal)
 
 void DPortfolio::onFill(std::shared_ptr<Fill> fill)
 {
-    float filled_quantity = fill->quantity;
+    float filled_quantity = fill->quantity_;
 
     if (filled_quantity < 0) // short
     {
-        process_sell_order(fill->instrument_id, fill->price, -1 * filled_quantity);
+        process_sell_order(fill->instrument_id_, fill->price_, -1 * filled_quantity);
     }
     else if (filled_quantity > 0) // long
     {
-        process_buy_order(fill->instrument_id, fill->price, filled_quantity);
+        process_buy_order(fill->instrument_id_, fill->price_, filled_quantity);
     }
     else
     {
@@ -55,9 +55,10 @@ bool DPortfolio::hasSufficientFunds(float price, float quantity)
     return m_fNetLiquidity > (quantity * price);
 }
 
-Order DPortfolio::createOrder(Signal::Type type, int32_t instrument_id, float price, float quantity, uint64_t timestamp)
+Order DPortfolio::createOrder(Type type, Side side, int32_t instrument_id, float price, float quantity,
+                              uint64_t timestamp)
 {
-    return Order(m_orderId, Order::Type::MARKET, instrument_id, quantity, price, timestamp);
+    return Order(m_orderId, type, side, instrument_id, quantity, price, timestamp);
 }
 
 void DPortfolio::process_sell_order(int32_t instrument_id, float price, float quantity)
