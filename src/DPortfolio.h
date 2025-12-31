@@ -4,6 +4,7 @@
 #define _DPORTFOLIO_H_
 
 #include "DEventBus.h"
+#include "types/Fill.h"
 #include "types/Order.h"
 #include "types/Position.h"
 #include "types/Signal.h"
@@ -20,15 +21,30 @@ class DPortfolio
     ~DPortfolio() = default;
 
     void onSignal(std::shared_ptr<Signal> signal);
+    void onFill(std::shared_ptr<Fill> order);
+
+    float getNetLiquidity()
+    {
+        return m_fNetLiquidity;
+    }
+    float getRealizedPnl()
+    {
+        return m_fRealizedPnl;
+    }
 
     void init(std::shared_ptr<DEventBus> eventBus)
     {
         m_pEventBus = eventBus;
     }
 
+    Position &getPosition(int instrument_id);
+
   private:
     bool hasSufficientFunds(float price, float quantity);
-    Position &getPosition(int instrument_id);
+
+    void process_sell_order(int32_t instrument_id, float price, float quantity);
+    void process_buy_order(int32_t instrument_id, float price, float quantity);
+
     Order createOrder(Signal::Type type, int32_t instrument_id, float price, float quantity, uint64_t timestamp);
 
     float m_fNetLiquidity{10000};
