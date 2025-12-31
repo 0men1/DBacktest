@@ -6,11 +6,12 @@
 DEngine::DEngine(std::unique_ptr<IStrategy> strategy, const std::string &filepath, uint32_t buffer_size,
                  int net_liquidity)
     : m_pStrategy(std::move(strategy)), m_pReader(std::make_unique<DReader>(filepath, buffer_size)),
-      m_pPortfolio(std::make_unique<DPortfolio>(net_liquidity))
+      m_pPortfolio(std::make_unique<DPortfolio>(net_liquidity)), m_pOrderBook(std::make_unique<DOrderBook>(10))
 {
     m_pEventBus = std::make_shared<DEventBus>();
     m_pStrategy->init(m_pEventBus);
     m_pPortfolio->init(m_pEventBus);
+    m_pOrderBook->init(m_pEventBus);
 }
 
 void DEngine::run()
@@ -45,26 +46,28 @@ void DEngine::run()
         switch (event->type())
         {
         case CANDLE: {
+            std::cout << "CANDLE" << std::endl;
             std::shared_ptr<Candle> candle = std::static_pointer_cast<Candle>(event);
             m_pStrategy->onCandle(candle);
-            std::cout << "CANDLE" << std::endl;
             break;
         }
 
         case ORDER: {
-            std::shared_ptr<Order> order = std::static_pointer_cast<Order>(event);
             std::cout << "ORDER" << std::endl;
+            std::shared_ptr<Order> order = std::static_pointer_cast<Order>(event);
+            m_pOrderBook->onOrder(order);
             break;
         }
 
         case SIGNAL: {
+            std::cout << "SIGNAL" << std::endl;
             std::shared_ptr<Signal> signal = std::static_pointer_cast<Signal>(event);
             m_pPortfolio->onSignal(signal);
-            std::cout << "SIGNAL" << std::endl;
             break;
         }
         case FILL: {
             std::cout << "FILL" << std::endl;
+            std::shared_ptr<Fill> fill = std::static_pointer_cast<Fill>(event);
             break;
         }
         }

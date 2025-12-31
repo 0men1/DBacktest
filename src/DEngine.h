@@ -1,5 +1,6 @@
 #pragma once
 
+#include "src/DOrderBook.h"
 #ifndef _DENGINE_H_
 #define _DENGINE_H_
 
@@ -21,6 +22,7 @@ class DEngine
     std::unique_ptr<IStrategy> m_pStrategy;
     std::unique_ptr<DReader> m_pReader;
     std::unique_ptr<DPortfolio> m_pPortfolio;
+    std::unique_ptr<DOrderBook> m_pOrderBook;
 };
 
 #endif // __DENGINE_H_

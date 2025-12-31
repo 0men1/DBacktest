@@ -15,7 +15,7 @@ class DOrderBook
 {
 
   public:
-    DOrderBook()
+    DOrderBook(int commission) : m_fCommission(commission)
     {
     }
     ~DOrderBook() = default;
@@ -23,15 +23,14 @@ class DOrderBook
     void onOrder(std::shared_ptr<Order> order);
     void onCandle(std::shared_ptr<Candle> candle);
 
-    void init(DEventBus *pEventBus)
+    void init(std::shared_ptr<DEventBus> pEventBus)
     {
         m_pEventBus = pEventBus;
     }
 
   private:
-    DEventBus *m_pEventBus;
-
     float m_fCommission{10};
+    std::shared_ptr<DEventBus> m_pEventBus;
     std::map<float, std::deque<std::shared_ptr<Order>>, std::greater<float>> m_bids;
     std::map<float, std::deque<std::shared_ptr<Order>>, std::less<float>> m_asks;
 };
