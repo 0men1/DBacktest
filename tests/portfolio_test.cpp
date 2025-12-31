@@ -26,8 +26,8 @@ TEST_F(PortfolioFillTest, HandlesNewBuyFillCorrectly)
 {
     int32_t instrument_id = 1;
     OrderId order_id = 1;
-    float price = 100.0f;
-    float qty = 10.0f;
+    double price = 100.0f;
+    double qty = 10.0f;
 
     auto fill = std::make_shared<Fill>(order_id, Type::MARKET, Side::BUY, instrument_id, price, qty, 0, 0);
     portfolio->onFill(fill);

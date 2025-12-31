@@ -1,9 +1,10 @@
 #include "DReader.h"
 #include <memory>
 
-DReader::DReader(std::string filepath, uint32_t m_vBuffersize) : m_sFilepath(filepath), m_uiBufferSize(m_vBuffersize)
+DReader::DReader(int32_t instrument_id, std::string filepath, uint32_t m_vBuffersize)
+    : m_sFilepath(filepath), m_iInstrumentId(instrument_id), m_uiBufferSize(m_vBuffersize)
 {
-    m_Summary.filePath = filepath;
+    m_Summary.filePath = m_sFilepath;
     m_Summary.bufferSize = m_uiBufferSize;
     m_Summary.numCandlesProcessed = 0;
 
@@ -98,5 +99,5 @@ std::shared_ptr<Candle> DReader::next()
     m_Summary.numCandlesProcessed++;
     CandleData &data = m_consumerBuffer[m_uiConsumerPos++];
 
-    return std::make_shared<Candle>(data);
+    return std::make_shared<Candle>(data, m_iInstrumentId);
 }

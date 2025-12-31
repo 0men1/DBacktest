@@ -17,7 +17,7 @@ void DPortfolio::onSignal(std::shared_ptr<Signal> signal)
         break;
     }
     case Side::SELL: {
-        int32_t orderQuantity = -1 * std::abs(signal->quantity_);
+        int32_t orderQuantity = std::abs(signal->quantity_);
         std::shared_ptr<Order> order = std::make_shared<Order>(createOrder(
             Type::MARKET, Side::SELL, signal->instrument_id_, signal->price_, orderQuantity, signal->timestamp_));
 
@@ -29,51 +29,53 @@ void DPortfolio::onSignal(std::shared_ptr<Signal> signal)
 
 void DPortfolio::onFill(std::shared_ptr<Fill> fill)
 {
-    float filled_quantity = fill->quantity_;
-
-    if (filled_quantity < 0) // short
+    double orderQuantity = std::abs(fill->quantity_);
+    switch (fill->side_)
     {
-        process_sell_order(fill->instrument_id_, fill->price_, -1 * filled_quantity);
-    }
-    else if (filled_quantity > 0) // long
-    {
-        process_buy_order(fill->instrument_id_, fill->price_, filled_quantity);
-    }
-    else
-    {
+    case Side::SELL:
+        process_sell_order(fill->instrument_id_, fill->price_, orderQuantity);
+        break;
+    case Side::BUY:
+        process_buy_order(fill->instrument_id_, fill->price_, orderQuantity);
+        break;
+    default:
         std::cout << "Filled quantity is 0" << std::endl;
+        break;
     }
+
+    m_results.ending_liquidity = m_fNetLiquidity;
 }
 
-Position &DPortfolio::getPosition(int instrument_id)
+Position &DPortfolio::getPosition(int32_t instrument_id)
 {
     return m_positions[instrument_id];
 }
 
-bool DPortfolio::hasSufficientFunds(float price, float quantity)
+bool DPortfolio::hasSufficientFunds(double price, double quantity)
 {
     return m_fNetLiquidity > (quantity * price);
 }
 
-Order DPortfolio::createOrder(Type type, Side side, int32_t instrument_id, float price, float quantity,
+Order DPortfolio::createOrder(Type type, Side side, int32_t instrument_id, double price, double quantity,
                               uint64_t timestamp)
 {
-    return Order(m_orderId, type, side, instrument_id, quantity, price, timestamp);
+    return Order(m_orderId++, type, side, instrument_id, price, quantity, timestamp);
 }
 
-void DPortfolio::process_sell_order(int32_t instrument_id, float price, float quantity)
+void DPortfolio::process_sell_order(int32_t instrument_id, double price, double quantity)
 {
     if (quantity <= 0 || price <= 0 || instrument_id < 0)
     {
+        std::cout << quantity << " " << price << " " << instrument_id << std::endl;
         throw std::invalid_argument("error: invalid order data");
     }
 
-    Position &p = m_positions[instrument_id];
+    Position &p = getPosition(instrument_id);
 
     if (p.quantity > 0 && p.quantity >= quantity)
     {
         p.quantity -= quantity;
-        int realized_pnl = (price - p.avg_price) * quantity;
+        double realized_pnl = (price - p.avg_price) * quantity;
         p.realized_pnl += realized_pnl;
 
         m_fNetLiquidity += price * quantity;
@@ -90,41 +92,39 @@ void DPortfolio::process_sell_order(int32_t instrument_id, float price, float qu
     }
 }
 
-void DPortfolio::process_buy_order(int32_t instrument_id, float price, float quantity)
+void DPortfolio::process_buy_order(int32_t instrument_id, double price, double quantity)
 {
     if (quantity <= 0 || price <= 0 || instrument_id < 0)
     {
         throw std::invalid_argument("error: invalid order data");
     }
 
-    Position &p = m_positions[instrument_id];
+    Position &p = getPosition(instrument_id);
 
-    float cost = price * quantity; // Cost of the order
+    double cost = price * quantity;                        // Cost of the order
+    double total_cost = cost + (p.avg_price * p.quantity); // Total cost of entire position + order cost
+    double new_quantity = p.quantity + quantity;
+    double new_avg_price = total_cost / new_quantity;
 
-    // If position quantity > 0 -> update the average price, increase quantity,
-    // decrease net liquid
-    if (p.quantity > 0)
+    p.avg_price = new_avg_price;
+    p.quantity = new_quantity;
+
+    std::cout << "new_avg_price: " << new_avg_price << std::endl;
+
+    m_fNetLiquidity -= cost;
+}
+
+void DPortfolio::update_metrics(long timestamp, int32_t instrument_id, double close_price)
+{
+    m_last_prices[instrument_id] = close_price;
+    double total_equity = m_fNetLiquidity;
+
+    for (auto &[id, pos] : m_positions)
     {
-        float total_cost = cost + (p.avg_price * p.quantity); // Total cost of entire position + order cost
-        float new_quantity = p.quantity + quantity;
-        float new_avg_price = total_cost / new_quantity;
-
-        p.avg_price = new_avg_price;
-        p.quantity = new_quantity;
-
-        m_fNetLiquidity -= cost;
+        if (m_last_prices.find(id) != m_last_prices.end())
+        {
+            total_equity += (pos.quantity * m_last_prices[id]);
+        }
     }
-    // If no position (e.g. quantity = 0) Assign average price, quantity, and
-    // decrease from net liquid
-    else if (p.quantity == 0)
-    {
-        p.avg_price = price;
-        p.quantity = quantity;
-
-        m_fNetLiquidity -= cost;
-    }
-    else
-    {
-        throw std::invalid_argument("error: invalid buy request");
-    }
+    m_results.record_snapshot(timestamp, total_equity);
 }

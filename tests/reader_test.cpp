@@ -20,7 +20,7 @@ class DReaderTest : public ::testing::TestWithParam<ReaderTestParams>
     {
         const auto &params = GetParam();
         std::string filepath = std::string(TEST_RESOURCE_DIR) + params.filepath;
-        reader = std::make_unique<DReader>(filepath, 100);
+        reader = std::make_unique<DReader>(0, filepath, 100);
     }
 
     std::unique_ptr<DReader> reader;

@@ -1,10 +1,10 @@
 #pragma once
 
-#include "src/DOrderBook.h"
 #ifndef _DENGINE_H_
 #define _DENGINE_H_
 
 #include "DEventBus.h"
+#include "DOrderBook.h"
 #include "DPortfolio.h"
 #include "DReader.h"
 #include "IStrategy.h"
@@ -13,9 +13,12 @@
 class DEngine
 {
   public:
-    DEngine(std::unique_ptr<IStrategy> strategy, const std::string &filepath, uint32_t buffer_size, int net_liquidty);
+    DEngine(std::unique_ptr<IStrategy> strategy, const std::string &symbol, const std::string &filepath,
+            uint32_t buffer_size, double net_liquidty);
     ~DEngine() = default;
     void run();
+
+    void print_final_report() const;
 
   private:
     std::shared_ptr<DEventBus> m_pEventBus;

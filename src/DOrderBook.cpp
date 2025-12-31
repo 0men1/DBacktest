@@ -3,9 +3,16 @@
 
 void DOrderBook::onOrder(std::shared_ptr<Order> order)
 {
+    m_results.total_orders++;
+
     switch (order->type_)
     {
     case Type::MARKET:
+        record_fill_event(order->price_, order->quantity_);
+
+        m_pEventBus->m_events.push(std::make_shared<Fill>(order->orderId_, order->type_, order->side_,
+                                                          order->instrument_id_, order->price_, order->quantity_,
+                                                          m_fCommission, order->timestamp_));
         break;
 
     case Type::LIMIT:
@@ -31,6 +38,7 @@ void DOrderBook::onCandle(std::shared_ptr<Candle> candle)
     {
         for (const auto &order : it->second)
         {
+            record_fill_event(order->quantity_, order->price_);
             m_pEventBus->m_events.push(std::make_shared<Fill>(order->orderId_, order->type_, order->side_,
                                                               order->instrument_id_, order->price_, order->quantity_,
                                                               m_fCommission, candle->timestamp()));
@@ -43,6 +51,7 @@ void DOrderBook::onCandle(std::shared_ptr<Candle> candle)
     {
         for (const auto &order : it->second)
         {
+            record_fill_event(order->quantity_, order->price_);
             m_pEventBus->m_events.push(std::make_shared<Fill>(order->orderId_, order->type_, order->side_,
                                                               order->instrument_id_, order->price_, order->quantity_,
                                                               m_fCommission, candle->timestamp()));

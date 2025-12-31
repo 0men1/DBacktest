@@ -8,21 +8,29 @@
 #include <memory>
 #include <thread>
 
-struct ReaderSummary
+struct ReaderResults
 {
     int numCandlesProcessed;
     std::string filePath;
     size_t bufferSize;
+
+    void print_results() const
+    {
+        std::cout << "\n--- READER RESULTS ---\n";
+        std::cout << "Num Candles Processed:  " << numCandlesProcessed << "\n";
+        std::cout << "File Path:  " << filePath << "\n";
+        std::cout << "Buffer Size:  " << bufferSize << "\n";
+    }
 };
 
 class DReader
 {
   public:
-    DReader(std::string filepath, uint32_t buffer_size);
+    DReader(int32_t instrument_id, std::string filepath, uint32_t buffer_size);
     ~DReader();
 
   public:
-    ReaderSummary summary()
+    const ReaderResults &get_results()
     {
         return m_Summary;
     }
@@ -30,9 +38,10 @@ class DReader
     bool has_next();
 
   private:
-    ReaderSummary m_Summary;
     std::string m_sFilepath;
     std::ifstream m_Filestream;
+
+    int32_t m_iInstrumentId;
 
     void producerTask();
 
@@ -51,6 +60,8 @@ class DReader
 
     std::condition_variable m_cv;
     std::mutex m_mutex;
+
+    ReaderResults m_Summary;
 };
 
 #endif // DREADER_H

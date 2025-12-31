@@ -11,6 +11,21 @@
 #include <map>
 #include <memory>
 
+struct OrderBookResults
+{
+    int total_orders = 0;
+    int total_fills = 0;
+    double volume_traded = 0.0;
+
+    void print_results() const
+    {
+        std::cout << "\n--- EXECUTION RESULTS ---\n";
+        std::cout << "Orders: " << total_orders << "\n";
+        std::cout << "Fills:  " << total_fills << "\n";
+        std::cout << "Volume: " << volume_traded << "\n";
+    }
+};
+
 class DOrderBook
 {
 
@@ -28,11 +43,26 @@ class DOrderBook
         m_pEventBus = pEventBus;
     }
 
+    const OrderBookResults &getResults() const
+    {
+        return m_results;
+    }
+
+  protected:
+    void record_fill_event(double price, double quantity)
+    {
+        m_results.total_fills++;
+        std::cout << "quantity: " << quantity << " price: " << price << std::endl;
+        m_results.volume_traded += (quantity * price);
+    }
+
   private:
-    float m_fCommission{10};
+    double m_fCommission{10};
     std::shared_ptr<DEventBus> m_pEventBus;
-    std::map<float, std::deque<std::shared_ptr<Order>>, std::greater<float>> m_bids;
-    std::map<float, std::deque<std::shared_ptr<Order>>, std::less<float>> m_asks;
+    std::map<double, std::deque<std::shared_ptr<Order>>, std::greater<double>> m_bids;
+    std::map<double, std::deque<std::shared_ptr<Order>>, std::less<double>> m_asks;
+
+    OrderBookResults m_results;
 };
 
 #endif //_DORDERBOOK_H_

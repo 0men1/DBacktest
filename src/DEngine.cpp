@@ -2,10 +2,12 @@
 
 #include "types/Order.h"
 #include "types/Signal.h"
+#include "utils/SymbolRegistry.h"
 
-DEngine::DEngine(std::unique_ptr<IStrategy> strategy, const std::string &filepath, uint32_t buffer_size,
-                 int net_liquidity)
-    : m_pStrategy(std::move(strategy)), m_pReader(std::make_unique<DReader>(filepath, buffer_size)),
+DEngine::DEngine(std::unique_ptr<IStrategy> strategy, const std::string &symbol, const std::string &filepath,
+                 uint32_t buffer_size, double net_liquidity)
+    : m_pStrategy(std::move(strategy)),
+      m_pReader(std::make_unique<DReader>(SymbolRegistry::instance().registerSymbol(symbol), filepath, buffer_size)),
       m_pPortfolio(std::make_unique<DPortfolio>(net_liquidity)), m_pOrderBook(std::make_unique<DOrderBook>(10))
 {
     m_pEventBus = std::make_shared<DEventBus>();
@@ -46,30 +48,42 @@ void DEngine::run()
         switch (event->type())
         {
         case CANDLE: {
-            std::cout << "CANDLE" << std::endl;
             std::shared_ptr<Candle> candle = std::static_pointer_cast<Candle>(event);
             m_pStrategy->onCandle(candle);
+            m_pOrderBook->onCandle(candle);
+            m_pPortfolio->update_metrics(candle->timestamp(), candle->instrument_id(), candle->close());
             break;
         }
 
         case ORDER: {
-            std::cout << "ORDER" << std::endl;
             std::shared_ptr<Order> order = std::static_pointer_cast<Order>(event);
             m_pOrderBook->onOrder(order);
             break;
         }
 
         case SIGNAL: {
-            std::cout << "SIGNAL" << std::endl;
             std::shared_ptr<Signal> signal = std::static_pointer_cast<Signal>(event);
             m_pPortfolio->onSignal(signal);
             break;
         }
         case FILL: {
-            std::cout << "FILL" << std::endl;
             std::shared_ptr<Fill> fill = std::static_pointer_cast<Fill>(event);
+            m_pPortfolio->onFill(fill);
             break;
         }
         }
     }
+
+    print_final_report();
+}
+
+void DEngine::print_final_report() const
+{
+    std::cout << "===========================" << std::endl;
+    std::cout << "      BACKTEST FINISHED    " << std::endl;
+    std::cout << "===========================" << std::endl;
+
+    m_pReader->get_results().print_results();
+    m_pPortfolio->getResults().print_results();
+    m_pOrderBook->getResults().print_results();
 }

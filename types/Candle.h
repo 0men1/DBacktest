@@ -1,9 +1,10 @@
 #pragma once
 
-#include "Event.h"
 #include <cstdint>
 #include <iostream>
 #include <memory>
+
+#include "Event.h"
 
 #pragma pack(push, 1)
 struct CandleData
@@ -18,37 +19,43 @@ struct CandleData
 class Candle : public Event
 {
   public:
-    Candle(CandleData data) : Event(CANDLE, data.timestamp), m_data(data)
+    Candle(CandleData data, int32_t instrument_id)
+        : Event(CANDLE, data.timestamp), data_(data), instrument_id_(instrument_id)
     {
     }
 
     float open() const
     {
-        return m_data.open;
+        return data_.open;
     }
     float high() const
     {
-        return m_data.high;
+        return data_.high;
     }
     float low() const
     {
-        return m_data.low;
+        return data_.low;
     }
     float close() const
     {
-        return m_data.close;
+        return data_.close;
     }
     double volume() const
     {
-        return m_data.volume;
+        return data_.volume;
     }
     uint64_t timestamp() const
     {
-        return m_data.timestamp;
+        return data_.timestamp;
+    }
+    int32_t instrument_id() const
+    {
+        return instrument_id_;
     }
 
   private:
-    CandleData m_data;
+    CandleData data_;
+    int32_t instrument_id_;
 };
 
 inline std::ostream &operator<<(std::ostream &os, std::shared_ptr<Candle> c)
