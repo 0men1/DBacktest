@@ -52,7 +52,6 @@ class DOrderBook
     void record_fill_event(double price, double quantity)
     {
         m_results.total_fills++;
-        std::cout << "quantity: " << quantity << " price: " << price << std::endl;
         m_results.volume_traded += (quantity * price);
     }
 

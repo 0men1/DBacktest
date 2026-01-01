@@ -66,7 +66,6 @@ void DPortfolio::process_sell_order(int32_t instrument_id, double price, double 
 {
     if (quantity <= 0 || price <= 0 || instrument_id < 0)
     {
-        std::cout << quantity << " " << price << " " << instrument_id << std::endl;
         throw std::invalid_argument("error: invalid order data");
     }
 
@@ -108,8 +107,6 @@ void DPortfolio::process_buy_order(int32_t instrument_id, double price, double q
 
     p.avg_price = new_avg_price;
     p.quantity = new_quantity;
-
-    std::cout << "new_avg_price: " << new_avg_price << std::endl;
 
     m_fNetLiquidity -= cost;
 }
