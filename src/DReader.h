@@ -5,54 +5,63 @@
 
 #include "types/Candle.h"
 #include <fstream>
+#include <memory>
 #include <thread>
-#include <vector>
 
-struct ReaderSummary {
-  int numCandlesProcessed;
-  std::string filePath;
-  size_t bufferSize;
+struct ReaderResults
+{
+    int numCandlesProcessed;
+    std::string filePath;
+    size_t bufferSize;
+
+    void print_results() const
+    {
+        std::cout << "\n--- READER RESULTS ---\n";
+        std::cout << "Num Candles Processed:  " << numCandlesProcessed << "\n";
+        std::cout << "File Path:  " << filePath << "\n";
+        std::cout << "Buffer Size:  " << bufferSize << "\n";
+    }
 };
 
-class DReader {
-public:
-  DReader(std::string filepath, uint32_t buffer_size);
-  ~DReader();
+class DReader
+{
+  public:
+    DReader(int32_t instrument_id, std::string filepath, uint32_t buffer_size);
+    ~DReader();
 
-public:
-  const Candle &next();
-  bool has_next();
+  public:
+    const ReaderResults &get_results()
+    {
+        return m_Summary;
+    }
+    std::shared_ptr<Candle> next();
+    bool has_next();
 
-public:
-  ReaderSummary summary() { return m_Summary; }
-  std::string &filepath() { return m_sFilepath; }
-  size_t bufferSize() { return m_uiBufferSize; }
+  private:
+    std::string m_sFilepath;
+    std::ifstream m_Filestream;
 
-private:
-  ReaderSummary m_Summary;
+    int32_t m_iInstrumentId;
 
-private:
-  std::string m_sFilepath;
-  std::ifstream m_Filestream;
+    void producerTask();
 
-  void producerTask();
+    size_t m_uiConsumerPos{0}; // Candle reading position in consumer buffer
+    size_t m_uiBufferSize;     // Max candles to read from file
+    size_t m_uiConsumerCount;  // How many candles to be read by consumer
 
-  size_t m_uiConsumerPos{0}; // Candle reading position in consumer buffer
-  size_t m_uiBufferSize;     // Max candles to read from file
-  size_t m_uiConsumerCount;  // How many candles to be read by consumer
-  std::vector<Candle> m_vBuffer;
+    std::unique_ptr<CandleData[]> m_producerBuffer;
+    std::unique_ptr<CandleData[]> m_consumerBuffer;
 
-  std::unique_ptr<Candle[]> m_producerBuffer;
-  std::unique_ptr<Candle[]> m_consumerBuffer;
+    std::thread m_producerThread;
 
-  std::thread m_producerThread;
+    bool m_bEof = false;         // producer reached end of file
+    bool m_bStop = false;        // Stop everything
+    bool m_bBufferReady = false; // when producer buffer is ready
 
-  bool m_bEof = false;         // producer reached end of file
-  bool m_bStop = false;        // Stop everything
-  bool m_bBufferReady = false; // when producer buffer is ready
+    std::condition_variable m_cv;
+    std::mutex m_mutex;
 
-  std::condition_variable m_cv;
-  std::mutex m_mutex;
+    ReaderResults m_Summary;
 };
 
 #endif // DREADER_H

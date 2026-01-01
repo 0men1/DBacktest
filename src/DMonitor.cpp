@@ -1,6 +1,8 @@
 #include "DMonitor.h"
 
-DMonitor::DMonitor() {}
+DMonitor::DMonitor()
+{
+}
 
 void DMonitor::stop(std::string name)
 {

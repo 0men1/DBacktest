@@ -3,19 +3,24 @@
 #ifndef _ISTRATEGY_H_
 #define _ISTRATEGY_H_
 
-#include "types/Candle.h"
-#include "types/Position.h"
-#include "types/Signal.h"
+#include <memory>
 
-class IStrategy {
-public:
-  virtual ~IStrategy() = default;
-  virtual std::vector<Signal> process(const Candle &candle,
-                                      const Position &p) = 0;
-  virtual const std::string &name() = 0;
-  virtual const std::string &symbol() = 0;
+struct DEventBus;
+class Candle;
 
-private:
+class IStrategy
+{
+  public:
+    virtual ~IStrategy() = default;
+    virtual void onCandle(std::shared_ptr<Candle> candle) = 0;
+
+    virtual void init(std::shared_ptr<DEventBus> eventBus)
+    {
+        m_pEventBus = eventBus;
+    };
+
+  protected:
+    std::shared_ptr<DEventBus> m_pEventBus = nullptr;
 };
 
 #endif // _ISTRATEGY_H

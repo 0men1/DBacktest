@@ -1,36 +1,18 @@
 #pragma once
 
-#ifndef _EVENT_BUS_H_
-#define _EVENT_BUS_H_
+#ifndef _DEVENTBUS_H_
+#define _DEVENTBUS_H_
 
-#include "DEvent.h"
+#include "types/Event.h"
 #include <memory>
 #include <queue>
 
-class DEventBus {
-public:
-  void enqueue_event(std::unique_ptr<Event> event) {
-    m_qEventQueue.push(std::move(event));
-  }
+struct DEventBus
+{
+    DEventBus() = default;
+    ~DEventBus() = default;
 
-  std::unique_ptr<Event> dequeue_event() {
-    if (m_qEventQueue.empty()) {
-      return nullptr;
-    }
-    std::unique_ptr<Event> top_event =
-        std::move(const_cast<std::unique_ptr<Event> &>(m_qEventQueue.top()));
-    m_qEventQueue.pop();
-    return top_event;
-  }
-
-  bool empty() { return m_qEventQueue.empty(); }
-  // std::priority_queue<std::unique_ptr<Event>> queue()
-  // {
-  //     return m_qEventQueue;
-  // }
-
-private:
-  std::priority_queue<std::unique_ptr<Event>> m_qEventQueue;
+    std::priority_queue<std::shared_ptr<Event>, std::vector<std::shared_ptr<Event>>, EventComparator> m_events;
 };
 
-#endif //_EVENT_BUS_H_
+#endif // _DEVENTBUS_H_

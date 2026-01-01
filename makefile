@@ -1,8 +1,8 @@
-BUILD_DIR = build
-BIN_MAIN = $(BUILD_DIR)/DBacktest
-BIN_TEST = $(BUILD_DIR)/tests/DBacktest_TEST
+BUILD_DIR=build
+BIN_MAIN=$(BUILD_DIR)/DBacktest
+BIN_TEST=$(BUILD_DIR)/tests/DBacktest_TEST
 
-ARGS = crypto coinbase btc-usd 15m output.txt
+ARGS=crypto coinbase sol-usd 1m output.txt
 
 .PHONY: all build run test clean cmake
 

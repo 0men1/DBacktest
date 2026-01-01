@@ -1,139 +1,89 @@
 #include "DEngine.h"
 
-/**
- * @brief Construct a new DEngine::DEngine object
- *
- * @param net_liquidty
- * @param strategy
- * @param filepath
- * @param buffer_size
- */
-DEngine::DEngine(std::unique_ptr<IStrategy> strategy, DOrderbook orderbook,
-                 const std::string &filepath, uint32_t buffer_size)
-    : m_Reader(filepath, buffer_size), m_pStrategy(std::move(strategy)),
-      m_Monitor(), m_orderBook(orderbook) {}
+#include "types/Order.h"
+#include "types/Signal.h"
+#include "utils/SymbolRegistry.h"
 
-BacktestResults DEngine::compile_results() {
-  m_Results.orderbookSummary = m_orderBook.summary();
-  m_Results.readerSummary = m_Reader.summary();
-
-  return m_Results;
+DEngine::DEngine(std::unique_ptr<IStrategy> strategy, const std::string &symbol, const std::string &filepath,
+                 uint32_t buffer_size, double net_liquidity)
+    : m_pStrategy(std::move(strategy)),
+      m_pReader(std::make_unique<DReader>(SymbolRegistry::instance().registerSymbol(symbol), filepath, buffer_size)),
+      m_pPortfolio(std::make_unique<DPortfolio>(net_liquidity)), m_pOrderBook(std::make_unique<DOrderBook>(10))
+{
+    m_pEventBus = std::make_shared<DEventBus>();
+    m_pStrategy->init(m_pEventBus);
+    m_pPortfolio->init(m_pEventBus);
+    m_pOrderBook->init(m_pEventBus);
 }
 
-/**
- * @brief Overloaded function to print statistics to a file instead of console
- *
- * @param results
- * @param filename
- */
-void DEngine::print_statistics(BacktestResults results,
-                               std::string filename) const {
-  std::ofstream fs(filename, std::ios::app);
+void DEngine::run()
+{
+    bool is_reader_active = true;
 
-  if (!fs || !fs.is_open()) {
-    throw std::runtime_error("error: could not open output file");
-  }
-}
+    while (is_reader_active || !m_pEventBus->m_events.empty())
+    {
+        if (is_reader_active && m_pEventBus->m_events.size() < 500)
+        {
+            int loaded_count = 0;
+            while (loaded_count < 1000 && m_pReader->has_next())
+            {
+                auto candle = m_pReader->next();
+                m_pEventBus->m_events.push(candle);
+                loaded_count++;
+            }
+            if (loaded_count == 0 && !m_pReader->has_next())
+            {
+                is_reader_active = false;
+            }
+        }
 
-/**
- * @brief Overloaded function to print statistics to console
- *
- * @param results
- * @param filename
- */
-void DEngine::print_statistics(BacktestResults results) const {
-  printf("Reader Summary: \n");
-  printf("    filepath: %s\n", m_Results.readerSummary.filePath.c_str());
-  printf("    buffer size: %zu\n", m_Results.readerSummary.bufferSize);
-  printf("    # Candles Processed: %d\n",
-         m_Results.readerSummary.numCandlesProcessed);
+        if (m_pEventBus->m_events.empty())
+        {
+            break;
+        }
 
-  printf("Orderbook Summary: \n");
-  printf("    # Limit Orders: %d\n", m_Results.orderbookSummary.numLimitOrders);
-  printf("    # Market Orders: %d\n",
-         m_Results.orderbookSummary.numMarketOrders);
+        std::shared_ptr<Event> event = m_pEventBus->m_events.top();
+        m_pEventBus->m_events.pop();
 
-  printf("    Portfolio Summary: \n");
-  printf("        # Positions: %d\n",
-         m_Results.orderbookSummary.portfolioSummary.num_positions);
-  printf("        # Trades: %d\n",
-         m_Results.orderbookSummary.portfolioSummary.num_trades);
-  printf("        # Buys: %d\n",
-         m_Results.orderbookSummary.portfolioSummary.num_buys);
-  printf("        # Sells: %d\n",
-         m_Results.orderbookSummary.portfolioSummary.num_sells);
-  printf("        # Stopped: %d\n",
-         m_Results.orderbookSummary.portfolioSummary.num_stopped);
-  printf("        Realized PNL: %f\n",
-         m_Results.orderbookSummary.portfolioSummary.realized_pnl);
-  printf("        Commission: %f\n",
-         m_Results.orderbookSummary.portfolioSummary.commission);
-  printf("        Starting Liquidity: %f\n",
-         m_Results.orderbookSummary.portfolioSummary.starting_liquidty);
-  printf("        Ending Liquidity: %f\n",
-         m_Results.orderbookSummary.portfolioSummary.ending_liquidity);
-}
+        switch (event->type())
+        {
+        case CANDLE: {
+            std::shared_ptr<Candle> candle = std::static_pointer_cast<Candle>(event);
+            m_pStrategy->onCandle(candle);
+            m_pOrderBook->onCandle(candle);
+            m_pPortfolio->update_metrics(candle->timestamp(), candle->instrument_id(), candle->close());
+            break;
+        }
 
-/**
- * @brief Run the engine + benchmarking
- *
- * When running a strategy, make a new thread and add it to a list of threads?
- * Wait until all the threads are finished, then end the process and produce
- * results for each thread
- *
- */
-BacktestResults DEngine::run() {
-  if (m_bVerboseOutput) {
-    std::cout << "Starting backtest..." << std::endl;
-    std::cout << "Strategy: " << m_pStrategy->name() << std::endl << std::endl;
-  }
+        case ORDER: {
+            std::shared_ptr<Order> order = std::static_pointer_cast<Order>(event);
+            m_pOrderBook->onOrder(order);
+            break;
+        }
 
-  m_Monitor.start("Session Timer");
-
-  Candle curr_candle = Candle{};
-
-  while (m_Reader.has_next()) {
-    m_Monitor.start("Candle Timer");
-    const Candle &c = m_Reader.next();
-
-    curr_candle = c;
-    try {
-
-      std::vector<Signal> signals = m_pStrategy->process(
-          c, m_orderBook.portfolio().get_position(m_pStrategy->symbol()));
-
-      // Add order to book then execute
-      for (auto &s : signals) {
-        m_orderBook.process_signal(s);
-      }
-      // m_orderBook.process_candle(c);
-
-      m_Monitor.stop("Candle Timer");
-    } catch (std::exception &e) {
-      // CLOSE POSITION
-      m_orderBook.flatten(m_pStrategy->symbol(), c.close);
-
-      if (m_bVerboseOutput) {
-        std::cerr << "Backtest error: " << e.what() << std::endl;
-      }
-      return BacktestResults{};
+        case SIGNAL: {
+            std::shared_ptr<Signal> signal = std::static_pointer_cast<Signal>(event);
+            m_pPortfolio->onSignal(signal);
+            break;
+        }
+        case FILL: {
+            std::shared_ptr<Fill> fill = std::static_pointer_cast<Fill>(event);
+            m_pPortfolio->onFill(fill);
+            break;
+        }
+        }
     }
-  }
 
-  // CLOSE POSITION
-  m_orderBook.flatten(m_pStrategy->symbol(), curr_candle.close);
+    print_final_report();
+}
 
-  m_Monitor.stop("Session Timer");
+void DEngine::print_final_report() const
+{
+    std::cout << "===========================" << std::endl;
+    std::cout << "      BACKTEST FINISHED    " << std::endl;
+    std::cout << "===========================" << std::endl;
 
-  BacktestResults results = compile_results();
-
-  if (m_bVerboseOutput) {
-    print_statistics(results);
-
-    m_Monitor.print_timers();
-
-    std::cout << "Backtest complete!" << std::endl;
-  }
-
-  return results;
+    m_pReader->get_results().print_results();
+    m_pPortfolio->getResults().print_results();
+    m_pOrderBook->getResults().print_results();
 }
