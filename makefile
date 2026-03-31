@@ -9,8 +9,8 @@ ARGS=crypto coinbase sol-usd 1m output.txt
 all: build
 
 cmake:
-	mkdir -p $(BUILD_DIR)
-	cd $(BUILD_DIR) && cmake ..
+	cmake -S . -B build/
+	cmake --build build/
 
 build: cmake
 	$(MAKE) -C $(BUILD_DIR)
