@@ -4,8 +4,6 @@ project(DBacktest)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-include(FetchContent)
-
 find_package(GTest REQUIRED)
 
 add_subdirectory(src)
