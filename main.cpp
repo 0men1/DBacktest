@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
     char *timeframe = argv[4];
 
     char go_file_path[256];
-    snprintf(go_file_path, sizeof(go_file_path), "../data/go/data_binaries/%s_%s_%s.bin", symbol, exchange, timeframe);
+    snprintf(go_file_path, sizeof(go_file_path), "../data/output/%s_%s_%s.bin", symbol, exchange, timeframe);
 
     DEngine engine(std::make_unique<ExampleStrategy>(), symbol, go_file_path, 100, 10000);
     engine.run();
